@@ -3,14 +3,15 @@ layout: default
 title: Home
 ---
 
-{% for post in paginator.posts %}
-<div class="posts">
-  <h3>
-    <a href="{{ site.github.url }}{{ post.url }}">{{ post.title }}</a>
-  </h3>
-  <p>
-    <span class="post-date"><i class="fa fa-clock-o" aria-hidden="true"></i> {% include read-time.html %}</span>
-  </p>
-</div>
-{% endfor %}
-</div>
+<ul class="posts">
+  {% for post in site.posts %}
+
+    <li itemscope>
+      <a href="{{ site.github.url }}{{ post.url }}">{{ post.title }}</a>
+      <p class="post-date"><span>
+      <i class="fa fa-clock-o" aria-hidden="true"></i> {% include read-time.html %}
+      </span></p>
+    </li>
+
+  {% endfor %}
+</ul>
