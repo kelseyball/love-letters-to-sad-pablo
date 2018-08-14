@@ -1,0 +1,28 @@
+# ML in a Nutshell: What can we do with machine learning?
+
+The digital world produces tons of data. Twitter sees five hundred million new tweets a day. Your smartwatch monitors your heart rate and step count by taking hundreds of thousands of daily measurements. Sensors, cell towers, and servers all generate massive streams of information. What can we do with all this data?
+
+## Models
+
+Machine learning uses data to build *models*, or representations of the real world. Models reduce something complex to a few variables of interest. Take Google Maps, a model of Earth’s surface. Rather than include every detail, the model only keeps the elements needed to help people navigate from place to place. 
+
+Models can be built in many ways: physicists make mathematical models to describe nature, and architects make scale models of their buildings. Machine learning engineers build models from data. For instance, a political campaign can use survey data to model the relationship between voter demographics and party affiliation. 
+
+Some models *describe* the world, like Google Maps’ street view. Other models make guesses, or *inferences*, about things we don’t know, like the future. For example, Google Maps’ navigational model *infers* your estimated time of arrival from traffic data. Let’s dig into the differences a bit more. 
+
+## Description and Inference
+
+*Description* helps us look at a dataset from a different perspective. Instead of staring at a list of grades, a teacher finds the average and standard deviation to get an intuitive sense of class performance. Description can also mean visualizing data to communicate trends. For instance, your smartwatch app turns data points into charts to help you monitor your health.
+
+*Inferences* are guesses about something we don't know. The self-driving car needs to identify objects in the road, and the stockbroker has to predict the market. Guesses come in two flavors: either we guess from a fixed set of answers, like on a multiple-choice test, or from a continuous range, like a fill-in-the-blank math question. We call the first kind *classification* and the second kind *prediction*.
+
+### Guesses
+	
+*Classification* means figuring out what category something belongs to. Often we’re guessing between two categories. Should we approve or deny the loan? Is the tumor malignant or benign? We call this binary classification. Some problems have more than two classes, like a handwriting recognition system identifying a letter from a scribble of lines. Whether it’s binary or multi-class classification, the goal is to label an input from a fixed set of categories.
+
+
+*Prediction* comes into play when our data doesn't fall into nice, neat categories like “approve” and “deny”. Sometimes we're dealing with variables that are continuous numbers, like temperature and price. The stockbroker guessing the future price of her holdings is faced with a predictive task, as is the weatherman giving tomorrow’s high and low temperatures. 
+ 
+## What’s Next?
+
+In a nutshell, we use machine learning to make descriptions and inferences about the world. In this post, we talked about the kinds of tasks we tackle with machine learning: description, classification, and prediction. However, identifying the task at hand is only one piece of the puzzle. There are lots of other questions to be answered: how is data aggregated? Where is it all stored? How can we build actual models? These issues require separate treatment and are essential to building real world systems. Here, I hope to have piqued your interest in machine learning and what it can do!

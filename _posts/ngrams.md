@@ -1,0 +1,249 @@
+# Build a Language Detector with Character N-Gram Models
+
+Have you ever used Google Translate? When you type in a phrase, you can select the original language from the menu or you can click on the “Detect language” button, and Google will identify the language for you. 
+
+![alt text](https://gist.githubusercontent.com/kelseyball/ecbbada4084b4256cba6c00705cdabda/raw/385a20453244a9cd09405053d4671bb009792339/image1.png)
+
+The “Detect language” feature is a classifier that guesses the language being typed. How do you think it works?  In this series, we’ll learn how to build one of our own! 
+
+## A Rule-Based Approach
+
+A simple solution might be to get a dictionary for each language. Then we take an input word and look it up in each dictionary to see which language it belongs to. If it shows up in a Spanish dictionary, it’s probably a Spanish word.
+
+Simple enough so far, but what if the word shows up in multiple languages? Spanish and English share *a*, *me*, and *no*, to name a few. We’d have to come up with a rule to handle this case. We could pick a default language to guess or choose the language where the word appears most frequently.
+
+What if the input is informal, like *dont*, *lol*, or *gonna*? We would have to keep dictionaries of informal words too. With each tricky case, we’ll need to add another rule, quickly making our system difficult to maintain. We can do better! 
+
+A probabilistic approach allows us to avoid continually adding new rules. Let’s build a simple probabilistic model to identify a word’s language.
+
+## A Probabilistic Approach
+
+Before we build our model, let’s consider how our brain approaches a similar problem. Have you ever played Hangman? If this were your game, which letter would you guess?
+```
+S T R A I G H _ 
+```
+You’d probably guess *T* (with confidence!). How about this one?
+```
+H O L _
+```
+This time, you’re probably torn between *D* and *E*, and maybe *Y*, too.
+
+Why aren’t you worried the missing letter might be *F*? Because your mental model tells you that seeing the letters *HOLF* is pretty unlikely, especially compared to seeing *HOLD*, *HOLE*, or *HOLY*.
+
+What if you and your opponent also speak Spanish? Now *A* should also seem like a reasonable guess -- *HOLA* is a common Spanish greeting.
+
+How does our brain develop this intuition about which sequences are likely and which are not? Simple: patterns we see frequently seem more likely to occur while rare ones seem unlikely. 
+
+### Character n-gram models
+
+What if we could build a tool to help us with Hangman? We give it the letters we have, and it tells us which letter to guess next. For example, we give it *HOL* and it tells us: *Guess D*. 
+
+We can build such a tool! To do so, we first need to build a character n-gram model.
+
+A *character n-gram model* can tell us the likelihood of seeing a particular character sequence -- that is, a word or part of a word -- in some given context. For example, our model could tell us that seeing gonna in the New York Times isn't gonna happen. We’ll use a character n-gram model to build our Hangman tool and then to build a language detection feature like Google Translate's from earlier. 
+
+An *n-gram* is just a character sequence of length `n`. If our word is *reread* and `n = 2` (also called a *bigram*) we could break it down into the following bigrams with their frequencies: *re*: 2, *er*: 1, *ea*: 1, *ad*: 1.
+
+Typically, we surround n-grams with spaces to help us know where words start and end. Consider the *h* and *a* in <i>**h**ol**a**</i> versus the *h* and *a* in *sc**h**ol**a**r*. They’re certainly not the same! We can take word boundaries into account by adding `n - 1` spaces to the start and end of each word. *reread* then becomes *\_reread\_*:  \_*r*: 1, *re*: 2, *er*: 1, *ea*: 1, *ad*: 1, *d\_*: 1. We call this *padding*. For the sake of simplicity, we'll leave this out in the examples below, but a real model would have to account for it.
+
+### Conditional probabilities 
+
+Let’s return to Hangman. Given that we know *HOL* are the first three letters, what’s the probability that the next letter is *D*?
+```
+P(D | HOL) = ?
+```
+Well, it depends on our expectations for English. For us, those expectations come from our familiarity with the language. For our model, we’ll have to explicitly give it some knowledge about English. In machine learning, *training data* is a set of examples we give to a model so that it can make guesses about similar data. Let’s suppose the only English training data we give our model is this weird group of sentences:
+
+```
+Holy guacamole, Batman!
+Beauty is in the eye of the beholder.
+How much should I withhold from my taxes?
+```
+
+To answer our question, we need to calculate the *conditional probability* of seeing *D* given the preceding letters *HOL*. This amounts to counting the occurrences of *HOL* and then seeing how many times it’s followed by *D*.
+
+<pre>
+<b>Hol</b>[y] guacamole, Batman!
+Beauty is in the eye of the be<b>hol</b>[d]er.
+How much should I with<b>hol</b>[d] from my taxes?
+</pre>
+
+Of the 3 times we see *HOL*, 2 are followed by the letter *D*. So according to our training data, there’s a ⅔ chance the next letter is a *D*.
+```
+P(D | HOL) = (# occurrences HOLD) / (# occurrences HOL) = 2/3
+```
+To come up with a guess, our tool makes this calculation for all possible next letters:
+
+```
+P(A | HOL) = 0
+P(B | HOL) = 0
+P(C | HOL) = 0
+P(D | HOL) = ⅔
+...
+P(Y | HOL) = ⅓
+...
+```
+
+Then it’d simply pick the letter with the highest probability! In our case, that’s *D*.
+
+### Joint probabilities
+
+At this point, our tool helps us answer the question: “Given some letters, what’s the most likely next letter?” But our tool could be used before the game even starts: “What’s the probability that my opponent picks the word *HOLD*?”
+
+Answering this question amounts to calculating a *joint probability*: `P(HOLD)`. Joint probabilities can be broken down into conditional probabilities -- just like the ones we solved in the last section. We can do this with the chain rule:
+
+```
+P(HOLD) = P(H) * P(O | H) * P(L | HO) * P(D | HOL) = 
+```
+But let’s say the word in our game from earlier was actually *HOLE*. Could our tool have predicted it?
+```
+P(HOLE) =  P(H) * P(O | H) * P(L | HO) * P(E | HOL) = 0
+```
+Our tool says that picking *HOLE* was impossible -- which we know isn’t true! Take a look at that last term:
+```
+P(E | HOL) =  (# occurrences HOLE) / (# occurrences HOL) = 0/3
+```
+Our model says there’s no chance an *E* will ever follow *HOL*. As a result, `P(HOLE) = 0`. In fact, if a word doesn’t appear in our training data, our model will say there’s zero probability it will ever appear. We could try to fix this problem with more training data, but there’s no guarantee -- our dataset will never have *all* the words.
+
+How can we build a model that makes reasonable estimates about words it’s never seen before?
+
+## Dealing With Sparsity
+
+So far, our model says there’s zero probability for anything that doesn’t show up in our training data. This makes our model about as effective as our rule-based approach. We need a way to estimate the probability of unseen sequences -- rare words, misspelled words, or new words we haven’t seen before. 
+
+### Complete dependence
+
+Recall how we calculated `P(HOLD)`: 
+``` 
+P(HOLD) = P(H) * P(O | H) * P(L | HO) * P(D | HOL)
+```
+Implicit in our expression is an assumption: *the probability of the next character depends on all the characters that came before it*. Or, more generally, *the future is completely dependent on the past*. 
+
+Sometimes, assumptions can make our problems easier to solve in exchange for a less accurate model of reality. Here, our assumption -- that the future depends on the entire past -- is fairly accurate, but it makes our problem impractical to solve: our training data needs to contain every possible character sequence to avoid probabilities of zero.
+
+Can we make a different assumption -- one that’s less accurate but gives us a more practical model?
+
+### Complete independence
+
+What if we assume each character is independent? That is, the next character doesn’t depend on previous ones. With complete independence, we can multiply the probabilities of the individual characters: 
+```
+P(HOLE) = P(H) * P(O) * P(L) * P(E)
+```
+This makes probabilities of zero much rarer; the only way our expression could evaluate to zero is if a specific character never appears in our training data. But, with this approach, we lose the distinction between *HOLE* and *OELH*:
+```
+P(OLEH) = P(O) * P(L) * P(E) * P(H) = P(HOLE)
+```
+Something’s off. We know intuitively that *HOLE* is more likely to appear than *OELH*. We need our model to know something about the *order* of the characters.
+
+### Partial dependence
+
+Complete *dependence* gives us impractical calculations, and complete *independence* loses the information we get from character order. Can we find a middle ground between the two?
+
+Let’s try a different assumption: the future only depends on the *recent* past. So instead of calculating `P(E | HOL)`, we shorten the past: `P(E | OL)`.
+
+We build the rest of the expression in the same way:
+```
+P(HOLE) = P(L | HO) * P(E | OL) 
+```
+Now, the last term expands to:
+```
+P(E | OL) = (# occurrences OLE) / (# occurrences OL) = 1/6
+```
+We’re more likely to end up with a non-zero probability because we only condition on shorter sequences. This makes our counts less sparse and our probabilities easier to estimate! Neat, huh?
+
+To deal with sparse sequences, we assumed that the future only depends on the recent past. In probability theory, we call this a *Markov assumption*. Our “recent past” was the previous two characters, making our model a *2nd-order Markov model*. In general, when we look back `n` states, we build an *nth-order Markov model*. 
+
+### We’re almost there!
+
+Our model still isn’t perfect though. *HOLE* is similar to *HOLY* and *HOLD* which do appear in our training data. Can we estimate the probability of a word that looks totally different? 
+```
+P(EGGS) = P(G | EG) * P(S | GG) = 0
+```
+Each conditional probability in this expression evaluates to zero because, in our training data, no trigrams start with *EG*. The same is true for all trigrams we’d have to count to evaluate `P(EGGS)`. How can we get a non-zero probability for new words that don’t look anything like the training data?
+ 
+### Smoothing
+
+The counts for the trigrams involved in calculating `P(EGGS)` are all zero. What if we just bump them all up to one?
+
+In fact, why don’t we just add one to *every* possible trigram? This includes trigrams that already occur in our training data, so that our probability distribution isn't skewed toward missing n-grams. Essentially, we’re starting our counters at one rather than zero. That way we’ll never get zero probability for any input to our model.
+
+We call this *smoothing* -- we want to smooth our probability distribution by keeping it from dropping to zero for sparse inputs. This particular technique is called *add-1 smoothing* and is the simplest approach to smoothing. 
+
+Now we can estimate the probability of "Englishiness" for sparse sequences like *eggs*, *gonna*, *asldkfja*, or *Englishiness* without having to say that they are all equally impossible.
+
+In sum, a character n-gram model tells us the likelihood of seeing an arbitrary character sequence by breaking it down into smaller pieces of length `n` (using partial dependence) and multiplying their individual probabilities based on their frequency in a (smoothed) set of training data. 
+
+Whew! We’re finally ready to build a language detector like Google’s.
+
+## Putting It All Together
+
+At this point, building the language detector will be a breeze!  We’ll gather training data for each language we want to detect and build character n-gram models for each language. Then, given some input word, we can ask each language model: "What’s the likelihood this word appears?" Whichever language model returns the highest probability is our detected language! 
+
+We need to collect some training data in each language. This can come from Wikipedia, news sources, books, or any large corpora. Check out Project Gutenberg for some free online books or use a web crawler to pull text from the web.
+
+Then we break our training data down into n-grams and create frequency tables, like in our *reread* example. We’ll consult these tables each time we calculate a joint probability. Check out this Scala code for making a frequency table from training data:
+
+```scala
+case class Corpus(language: String, body: String)
+case class FrequencyTable(language: String, table: Map[String, Int])
+
+def frequencyCounter(corpus: Corpus, n: Int): FrequencyTable = {
+ val padding = " " * (n - 1)
+ val ngrams = for {
+   word <- corpus.body.split(" ")
+   padded = padding + word + padding
+ } yield padded.sliding(n).toList
+ val table = ngrams.flatten.groupBy(identity).mapValues(_.length)
+   .mapValues(_ + 1) // add-1 smoothing
+ FrequencyTable(corpus.language, table)
+}
+```
+
+Next, we write a method to calculate the probability of an input word given a frequency table.
+
+```scala
+val ValidCharacters = ('a' to 'z').toList
+
+def calculateProbability(input: String, ft: FrequencyTable, n: Int): Float = {
+ val padding = " " * (n - 1)
+ val padded = padding + input + padding
+ val ngrams = padded.sliding(n).toList
+ val probabilities = for {
+   ngram <- ngrams
+   top = ft.table.getOrElse(ngram, 1) // add-1 smoothing
+   bottom = ValidCharacters
+     .map(char => ft.table.getOrElse(ngram.substring(0, n - 1) + char, 1))
+     .sum
+ } yield top.toFloat / bottom.toFloat
+ probabilities.product
+}
+```
+
+The last step is to call this method for each language model. Select the model that gives the highest probability and return its language. The code for this part is an exercise left for you!
+
+## What Have We Learned?
+
+We covered quite a bit in this post:
+- Conditional and joint probabilities
+- Character n-gram models
+  - N-grams
+  - Padding
+  - Frequency tables
+- Handling sparsity
+  - Independence and dependence assumptions
+  - Smoothing
+
+Then we used these concepts to build a language detector!
+
+Our model is robust enough to make guesses about words it’s never seen before. We guess that *phlack* is English because *ph* and *ck* occur semi-often in English whereas in Spanish and Hindi they’re almost completely absent.
+
+![alt-text](https://gist.githubusercontent.com/kelseyball/ecbbada4084b4256cba6c00705cdabda/raw/aa6d24c5af3ba4637186e2fc601361c3bb595282/image2.png)
+
+Similarly, we guess Spanish for *chorranto* (a made-up word) because it contains common Spanish morphemes.
+
+![alt-text](https://gist.githubusercontent.com/kelseyball/ecbbada4084b4256cba6c00705cdabda/raw/aa6d24c5af3ba4637186e2fc601361c3bb595282/image3.png)
+
+This is just the tip of the iceberg for natural language processing. What’s next? Well, we broke down *words* into n-grams of *characters*. What if we broke down *sentences* into n-grams of *words*? For example, *natural language processing is fun!* could be broken down into the following trigrams: *natural language processing*, *language processing is*, *processing is fun*.
+
+This is a common approach to *language modeling* and it helps us do fun things like authorship identification, machine translation, and speech recognition. Hopefully this post helped get your feet wet -- now it’s time to jump in!
+
