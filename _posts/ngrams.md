@@ -1,3 +1,12 @@
+---
+layout: post
+title: "Build a Language Detector with Character N-Gram Models"
+author: "Kelsey Ball"
+categories: journal
+tags: [nlp, ml]
+image:
+---
+
 # Build a Language Detector with Character N-Gram Models
 
 Have you ever used Google Translate? When you type in a phrase, you can select the original language from the menu or you can click on the “Detect language” button, and Google will identify the language for you. 

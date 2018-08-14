@@ -1,3 +1,12 @@
+---
+layout: post
+title: "ML in a Nutshell: What can we do with machine learning?"
+author: "Kelsey Ball"
+categories: journal
+tags: [ml]
+image:
+---
+
 # ML in a Nutshell: What can we do with machine learning?
 
 The digital world produces tons of data. Twitter sees five hundred million new tweets a day. Your smartwatch monitors your heart rate and step count by taking hundreds of thousands of daily measurements. Sensors, cell towers, and servers all generate massive streams of information. What can we do with all this data?
