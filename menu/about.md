@@ -1,7 +1,7 @@
 ---
 layout: page
-title: sad pablo learns ml!
+title: sad pablo learns ml
 ---
 
-there is writing on this site :~)
+learn about ml to cheer up sad pablo :~)
 
