@@ -1,1 +1,1 @@
-# sad pablo learns ml
+# love letters to sad pablo - assorted technical writings  
