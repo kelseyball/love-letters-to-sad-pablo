@@ -1,1 +1,1 @@
-# love letters to sad pablo - assorted technical writings  
+# assorted technical writings

@@ -20,8 +20,8 @@ permalink:           none
 plugins:             [jekyll-paginate, jekyll-sitemap, jekyll-feed, jekyll-seo-tag]
 
 # Customise atom feed settings (this is where Jekyll-Feed gets configuration information)
-title:		           'sad pablo'
-description:	       'assorted technical writings'
+title:		         'assorted technical writings'
+description:         ' '
 author:              'kelsey ball'
 
 # RSS 2.0 can be used instead of Atom by uncommenting following two lines
